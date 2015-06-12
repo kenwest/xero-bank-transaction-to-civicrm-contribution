@@ -1,0 +1,61 @@
+#!/usr/bin/php
+<?php
+
+$input = fopen('/tmp/1-xero-report.csv', 'w');
+$columns = array('Date','Description', 'Reference', 'Debit', 'Credit', 'Gross', 'GST', 'Account Code', 'Account', 'Department', 'Secondary Tag');
+fputcsv($input, $columns);
+$columns = array('','', '', '', '', '', '', '', '', '', '');
+fputcsv($input, $columns);
+$columns = array('Receive Money','', '', '', '', '', '', '', '', '', '');
+fputcsv($input, $columns);
+$columns = array('20 Jan 2015', 'John Smith - 1000 - donation', '', '', '100.00', '100.00', '0.00', '200','Regular Giving', 'Sydney', '');
+fputcsv($input, $columns);
+$columns = array('20 Jan 2015', 'John Smith - 1000 - event', '', '', '100.00', '100.00', '0.00', '200','Event', 'Sydney', '');
+fputcsv($input, $columns);
+$columns = array('20 Jan 2015', 'John Smith - 10x0 - donation', '', '', '100.00', '100.00', '0.00', '200','Regular Giving', 'Sydney', '');
+fputcsv($input, $columns);
+$columns = array('20 Jan 2015', 'John Smith - 1000 - donation', 'INV-0001', '', '100.00', '100.00', '0.00', '200','Regular Giving', 'Sydney', '');
+fputcsv($input, $columns);
+$columns = array('','', '', '', '', '', '', '', '', '', '');
+fputcsv($input, $columns);
+$columns = array('Ignored','', '', '', '', '', '', '', '', '', '');
+fputcsv($input, $columns);
+fclose($input);
+
+$lookup = fopen('/tmp/2-lookup.csv', 'w');
+$columns = array('Lines with two columns are interpreted as Variable/Value pairs');
+fputcsv($lookup, $columns);
+$columns = array('Lines with three columns are interpreted as Variable/Key/Value pairs');
+fputcsv($lookup, $columns);
+$columns = array('Currency','AUD');
+fputcsv($lookup, $columns);
+$columns = array('Source','Xero bank transaction');
+fputcsv($lookup, $columns);
+$columns = array('Status','Completed');
+fputcsv($lookup, $columns);
+$columns = array('Financial Type','Donation');
+fputcsv($lookup, $columns);
+$columns = array('Financial Type Override','Event','Event Fee');
+fputcsv($lookup, $columns);
+$columns = array('Financial Type Override','Product Income','Sales');
+fputcsv($lookup, $columns);
+$columns = array('Instrument','EFT');
+fputcsv($lookup, $columns);
+$columns = array('Pledge','No');
+fputcsv($lookup, $columns);
+$columns = array('Suppress Xero invoice','Yes');
+fputcsv($lookup, $columns);
+fclose($lookup);
+
+echo "To test, run ...\n";
+echo "  ./xero-bank-transaction.php /tmp/1-xero-report.csv /tmp/2-lookup.csv /tmp/3-civicrm-import.csv\n";
+echo "  more /tmp/3-civicrm-import.csv\n";
+echo "    - line 1 should be ignored\n";
+echo "    - line 2 should be ignored\n";
+echo "    - line 3 should be ignored\n";
+echo "    - line 4 should create an output line for a Donation\n";
+echo "    - line 5 should create an output line for an Event Fee\n";
+echo "    - line 6 should raise an error because it has no Contact Id in the Description\n";
+echo "    - line 7 should raise an error because it has a Reference field - it is an Invoice\n";
+echo "    - line 8 should be ignored\n";
+echo "    - line 9 should be ignored\n";
