@@ -12,17 +12,18 @@
  *  Skip lines before and including the 'Receive Money' line
  *  Insert a header line in the output
  *  Repeat for each subsequent line...
- *   Get Id from Name
+ *   Get Id from Description
  *   Get Date, Amount
  *   Assume Currency is 'AUD'
- *   Assume Source is 'Xero bank transaction'
+ *   Get City and Purpose from the Xero tracking categories
+ *   Assume Source is 'Xero bank transaction' concatenated with Account
  *   Assume Status is 'Completed'
- *   Assume Financial Type is 'Donation' unless we can tell it is 'Event Fee' or 'Sale'
+ *   Assume Financial Type is 'Donation' unless we can tell it is 'Event Fee' or 'Sale' (derived from Account)
  *   Assume Payment Instrument is 'EFT'
  *   Assume Pledge is 'No'
  *   Assume Suppress Xero Invoice is 'Yes'
- *   Put Id, Date, Amount, Currency, Source, Status, Financial Type, Payment Instrument, Pledge, suppress Xero invoice
- *  Continue until there is a blank line
+ *   Put Date, Id, Amount, Currency, City, Purpose, Source, Status, Financial Type, Payment Instrument, Pledge, suppress Xero invoice
+ *  Continue until there is a line containing 'Total Receive Money'
  * Exit
  */
 
@@ -36,9 +37,9 @@ if ($input === FALSE || $lookup === FALSE || $output === FALSE) {
 
 $variables = array();
 while ( ($columns = fgetcsv($lookup)) !== FALSE ) {
-  if (empty($columns[0]) || empty($columns[1])) {
+  if (!isset($columns[0]) || !isset($columns[1])) {
     continue;
-  } elseif (empty($columns[2])) {
+  } elseif (!isset($columns[2])) {
     $variables[$columns[0]] = $columns[1];
   } else {
     if (!isset($variables[$columns[0]])) {
@@ -52,40 +53,55 @@ $writing = FALSE;
 $lineNumber = 1;
 while ( ($columns = fgetcsv($input)) !== FALSE ) {
   if ($writing) {
-    if (empty($columns[0])) {
+    if ($columns[lookup($variables, 'Date')] == lookup($variables, 'End Bank Transactions')) {
       $writing = FALSE;
-    } elseif ($columns[2] != '') {
-      echo 'WARNING on line ' . $lineNumber . ': the Reference field is not empty - this is an invoice - ignoring' . "\n";
     } else {
       $line = array();
-      $line[] = date_format(date_create_from_format('d M Y', $columns[0]), 'Y-m-d');
-      if (preg_match('/ - ([[:digit:]]+) - /', $columns[1], $matches) && count($matches) == 2) {
+      $line[] = date_format(date_create_from_format('d M Y', $columns[lookup($variables, 'Date')]), 'Y-m-d');
+      if (preg_match('/ - ([[:digit:]]+) - /', $columns[lookup($variables, 'Description')], $matches) && count($matches) == 2) {
         $line[] = $matches[1];
+        if (is_numeric($columns[lookup($variables, 'Gross')])) {
+          $line[] = $columns[lookup($variables, 'Gross')];
+        }
+        else {
+          $line[] = str_replace(',', '', $columns[lookup($variables, 'Gross')]);
+        }
+        $line[] = $variables['Currency'];
+        $line[] = lookup($variables, 'CiviCRM City', $columns[lookup($variables, 'City')]);
+        $line[] = $columns[lookup($variables, '2nd Category')];
+        $line[] = $variables['Source'] . ' - ' . $columns[lookup($variables, 'Account')];
+        $line[] = $variables['Status'];
+        $line[] = lookup($variables, 'Financial Type', $columns[lookup($variables, 'Account')]);
+        $line[] = $variables['Instrument'];
+        $line[] = $variables['Pledge'];
+        $line[] = $variables['Suppress Xero invoice'];
+        fputcsv($output, $line);
       } else {
-        echo 'WARNING on line ' . $lineNumber . ': could not get a Contact Id from the Description - leaving it blank' . "\n";
-        $line[] = '';
+        echo 'ERROR on line ' . $lineNumber . ': could not get a Contact Id from the Description - skipping' . "\n";
       }
-      $line[] = $columns[5];
-      $line[] = $variables['Currency'];
-      $line[] = $columns[9];
-      $line[] = $variables['Source'];
-      $line[] = $variables['Status'];
-      if (isset($variables['Financial Type Override'][$columns[8]])) {
-        $line[] = $variables['Financial Type Override'][$columns[8]];
-      } else {
-        $line[] = $variables['Financial Type'];
-      }
-      $line[] = $variables['Instrument'];
-      $line[] = $variables['Pledge'];
-      $line[] = $variables['Suppress Xero invoice'];
-      fputcsv($output, $line);
     }
   } else {
-    if ($columns[0] == 'Receive Money') {
+    if ($columns[lookup($variables, 'Date')] == lookup($variables, 'Start Bank Transactions')) {
       $writing = TRUE;
-      fputcsv($output, array('Date', 'Contact Id', 'Amount', 'Currency', 'City', 'Source', 'Status', 'Financial Type', 'Instrument', 'Pledge', 'Suppress Xero Invoice'));
+      fputcsv($output, array('Date', 'Contact Id', 'Amount', 'Currency', 'City', 'Purpose', 'Source', 'Status', 'Financial Type', 'Instrument', 'Pledge', 'Suppress Xero Invoice'));
     }
   }
   $lineNumber++;
 }
 
+function lookup($variables, $name, $index = NULL, $default = NULL) {
+  if (isset($variables[$name])) {
+    if (isset($index) && is_array($variables[$name])) {
+      return lookup($variables[$name], $index, NULL, $default);
+    }
+    else {
+      return $variables[$name];
+    }
+  }
+  elseif (isset($variables['Default'])) {
+    return $variables['Default'];
+  }
+  else {
+    return $default;
+  }
+}
