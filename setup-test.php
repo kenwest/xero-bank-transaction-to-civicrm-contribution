@@ -16,6 +16,8 @@ $columns = array('20 Jan 2015', 'John Smith - 10x0 - donation', '', '', '100.00'
 fputcsv($input, $columns);
 $columns = array('20 Jan 2015', 'John Smith - 1000 - donation', 'INV-0001', '', '100.00', '100.00', '0.00', '200','Product Income', 'MEL', 'Support Andrew');
 fputcsv($input, $columns);
+$columns = array('20 Jan 2015', 'John Smith - 1000', '', '', '1,000.00', '1,000.00', '0.00', '200','Regular Giving', 'SYD', '');
+fputcsv($input, $columns);
 $columns = array('Total Receive Money','', '', '', '', '', '', '', '', '', '');
 fputcsv($input, $columns);
 $columns = array('Ignored','', '', '', '', '', '', '', '', '', '');
@@ -85,5 +87,6 @@ echo "    - line 4 should create an output line for a Donation - comma in amount
 echo "    - line 5 should create an output line for an Event Fee - also City is empty\n";
 echo "    - line 6 should fail because it has no Contact Id in the Description\n";
 echo "    - line 7 should create an output line for Sales - 2nd category is in Source\n";
-echo "    - line 8 should be ignored\n";
+echo "    - line 8 should create an output line for a Donation - where the Contact Id is at the end of the Description column\n";
 echo "    - line 9 should be ignored\n";
+echo "    - line 10 should be ignored\n";

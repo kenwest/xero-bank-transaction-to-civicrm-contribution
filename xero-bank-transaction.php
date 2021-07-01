@@ -58,7 +58,7 @@ while ( ($columns = fgetcsv($input)) !== FALSE ) {
     } else {
       $line = array();
       $line[] = date_format(date_create_from_format('d M Y', $columns[lookup($variables, 'Date')]), 'Y-m-d');
-      if (preg_match('/ - ([[:digit:]]+) - /', $columns[lookup($variables, 'Description')], $matches) && count($matches) == 2) {
+      if (preg_match('/ - ([[:digit:]]+)( - |$)/', $columns[lookup($variables, 'Description')], $matches) && count($matches) == 3) {
         $line[] = $matches[1];
         if (is_numeric($columns[lookup($variables, 'Gross')])) {
           $line[] = $columns[lookup($variables, 'Gross')];
